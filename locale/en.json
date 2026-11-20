@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Workbenches",
+    "description": "Scene presets in the composer: pick one and its own scene rules and skill routing join the current session's system prompt. Ships with 20 captured Doubao presets plus a built-in Godot game-development workbench. The data model is platform-neutral, so presets from other platforms can be imported the same way. Definitions stay on this machine.",
+    "detail": "docs/DETAIL.md"
+  }
+}

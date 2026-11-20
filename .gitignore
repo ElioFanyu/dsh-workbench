@@ -1,0 +1,16 @@
+# 抓取到的第三方数据，不入库
+# data/workbenches.json 是各平台「工作台」的提示词原文，属于对应平台的专有内容，
+# 因此不随仓库分发。需要时在本地自行抓取并把文件放回 data/，
+# 插件会自动与 data/custom-workbenches.json 合并（缺任一文件都不影响运行）。
+data/workbenches.json
+
+# 运行时产物
+trace.log
+
+# 依赖与系统文件
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+.DS_Store
+Thumbs.db
+*.log

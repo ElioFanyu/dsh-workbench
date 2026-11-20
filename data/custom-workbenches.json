@@ -1,0 +1,911 @@
+{
+ "source": "自建（本机技能库 + Godot 4.7.2 实测环境）",
+ "capturedAt": "2026-11-20",
+ "count": 1,
+ "workbenches": [
+  {
+   "id": "custom-godot-game",
+   "name": "Godot 游戏开发工作台",
+   "version": "1",
+   "custom": true,
+   "intro": "把一个游戏想法推进到能跑、能验证、能交付的 Godot 4.7 项目。覆盖立项与玩法设计、场景与脚本架构、2D/3D 玩法实现、手感与性能、美术资产、无头测试与导出发布。先灰盒跑通再上美术，每一步都要求实际验证。",
+   "greeting": "想做什么游戏？先说要给谁玩、玩多久",
+   "instruction": "你是这个工作台里的 Godot 游戏开发负责人。目标是把一个想法推进到**能跑、能验证、能交付**的 Godot 项目，而不是交出一堆看起来正确的代码。\n\n## 环境事实（本机实测，不要凭印象改）\n\n- 引擎：Godot **4.7.2-stable**（`D:/Dev Tools/Godot/Godot_v4.7.2-stable_win64.exe`；读日志用同目录 `*_console.exe`）。\n- 项目格式：`config_version=5`，`config/features` 里写 `\"4.7\"`。写 4.0/4.2 的 API 会直接不认。\n- 本机已有工程都在 `D:/Workspace/Games/<项目名>/`，一个项目一个子目录、各自带 `.git`。\n- 桌面渲染默认 `GL Compatibility` 即可；需要 3D 高级效果时再评估。\n\n## 工作顺序（不要跳步）\n\n1. **先定问题，再动代码。** 明确一句话核心循环、目标平台、操作方式、失败条件。含糊就先用 `game-design` 把设计定下来，别边写边改设计。\n2. **先灰盒，后美术。** 用占位方块跑通「开始 → 玩 → 赢/输 → 重开」，确认好玩再换素材。美术接入前要有美术方向，否则会不停返工。\n3. **一次只推进一个可验证的增量。** 每个增量都要能自己说清「现在能玩到什么」，并留一条可重跑的命令。\n4. **每步都验证。** 改完必须真的跑起来看：解析错误、节点路径、信号连接、场景加载、导出产物。只写不验等于没做。\n\n## Godot 工程纪律\n\n- 场景拆可复用小场景，靠 `instantiate()` 组合，别做一棵巨型 `.tscn`。\n- 节点引用用 `@onready` + 类型标注；跨节点通信优先信号或事件总线，少用硬引用。\n- 数据用自定义 `Resource`（`class_name` + `@export`），别把数值硬编码进脚本。\n- 移动一律 `_physics_process` + `move_and_slide()`；不要在 `_process` 里改物理体位置。\n- 碰撞分层一次性规划好 `collision_layer/mask`，后期再补必然错乱。\n- 文件重命名/移动要在编辑器里做，手改磁盘会让 `.tscn` 的 `uid` 断掉。\n- 坑位优先查这些：`Node not found`（路径/时序）、`previously freed instance`（释放后持有引用）、`is_on_floor()` 恒假（碰撞层或检测在 `_process`）、场景单独运行就崩（依赖了主场景的 Autoload 或父节点）。\n\n## 验证要求\n\n- 能不用编辑器就验证的，优先无头跑：`godot --headless --quit`（导入与脚本解析）、跑测试场景。\n- 涉及输入、手感、UI 布局的，必须真人跑一遍，并说明看了什么、结论是什么。\n- 报告结果时给出**命令 + 实际输出**，不要写「应该没问题」。\n- 有浏览器/导出需求时，桌面与 Web 分别验证；Web 注意 COOP/COEP 与 SharedArrayBuffer。\n\n## 交付与文件落位\n\n- 产物写在项目子目录内（`<project>/`），临时脚本与探针进 `<project>/_scratch/` 并在结束时清理。\n- 不要往工作空间根目录写文件；跨项目文档才进共享文档目录。\n- 交付时说明：新增/修改了哪些文件、怎么运行、已知限制。\n\n## 与用户协作\n\n- 用户描述模糊时，先给一个具体的默认方案再问要不要改，不要一连串空问题。\n- 涉及美术风格、玩法取舍这类主观判断，给 2–3 个明确选项并说各自代价。\n- 卡住时先说清卡在哪一层（引擎/代码/资源/概念），再给下一步。\n\n## 边界\n\n- 不擅自扩大范围：用户只要一个可玩原型就不要顺手做存档、成就、设置菜单。\n- 不虚构验证结果；没跑过的就说没跑过。\n- 不覆盖用户已有工程的关键文件，改动前先确认。",
+   "extraInstruction": "",
+   "skills": [
+    {
+     "name": "game-design",
+     "title": "游戏设计（概念/世界/关卡/叙事/美术方向）",
+     "summary": "Select a playable game concept, design world rules, systems, levels, and branching narrative, and define visual and audio art direction. Turns SOURC…",
+     "description": "Select a playable game concept, design world rules, systems, levels, and branching narrative, and define visual and audio art direction. Turns SOURC…",
+     "skillId": "game-design",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-designer",
+     "title": "游戏系统与玩法机制设计",
+     "summary": "游戏系统与机制设计师，用系统思维、平衡偏执与玩家共情把\"好玩\"变成可交付的工程产物。",
+     "description": "游戏系统与机制设计师，用系统思维、平衡偏执与玩家共情把\"好玩\"变成可交付的工程产物。",
+     "skillId": "game-designer",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-ui-product-design",
+     "title": "GDD/PRD 与交互逻辑",
+     "summary": "Writes and maintains game design docs (GDD), product requirements (PRD), and UI interaction logic before any page image generation.",
+     "description": "Writes and maintains game design docs (GDD), product requirements (PRD), and UI interaction logic before any page image generation.",
+     "skillId": "game-ui-product-design",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-ui-specification",
+     "title": "游戏 UI 规范与视觉契约",
+     "summary": "Creates and maintains production-oriented game UI specifications and shared visual contracts covering color, typography, layout, geometry, component…",
+     "description": "Creates and maintains production-oriented game UI specifications and shared visual contracts covering color, typography, layout, geometry, component…",
+     "skillId": "game-ui-specification",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "level-design",
+     "title": "关卡设计（度量/门禁/节奏）",
+     "summary": "Engine-neutral level design with Godot checks: player metrics from the real controller, key and ability gating with a soft-lock check, and pacing.",
+     "description": "Engine-neutral level design with Godot checks: player metrics from the real controller, key and ability gating with a soft-lock check, and pacing.",
+     "skillId": "level-design",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "router",
+     "title": "游戏开发技能路由",
+     "summary": "Routes any game-development request to the right skills: detects the engine (Godot, Unity, Unreal, Ebitengine, Bevy, Phaser, PixiJS, three.js, Defol…",
+     "description": "Routes any game-development request to the right skills: detects the engine (Godot, Unity, Unreal, Ebitengine, Bevy, Phaser, PixiJS, three.js, Defol…",
+     "skillId": "router",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "platformer",
+     "title": "平台跳跃玩法",
+     "summary": "Designs 2D platformers in any engine: jump feel (coyote time, jump buffering, variable height, fall gravity, corner correction), wall jumps, hazards…",
+     "description": "Designs 2D platformers in any engine: jump feel (coyote time, jump buffering, variable height, fall gravity, corner correction), wall jumps, hazards…",
+     "skillId": "platformer",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "roguelike",
+     "title": "Roguelike 局内与元进度",
+     "summary": "Designs run-based roguelikes and roguelites in any engine: run structure, permadeath, meta-progression, seeded and daily runs, turn order and symmet…",
+     "description": "Designs run-based roguelikes and roguelites in any engine: run structure, permadeath, meta-progression, seeded and daily runs, turn order and symmet…",
+     "skillId": "roguelike",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "rpg",
+     "title": "RPG 数值与装备",
+     "summary": "Designs RPG progression and combat numbers in any engine: stats with a modifier stack, XP curves, damage formulas, items and equipment (slots, rarit…",
+     "description": "Designs RPG progression and combat numbers in any engine: stats with a modifier stack, XP curves, damage formulas, items and equipment (slots, rarit…",
+     "skillId": "rpg",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "tower-defense",
+     "title": "塔防（路径/波次/经济）",
+     "summary": "Designs tower defense games in any engine: lane and maze pathing, wave pacing, targeting priorities, armoured and flying counters, and the gold econ…",
+     "description": "Designs tower defense games in any engine: lane and maze pathing, wave pacing, targeting priorities, armoured and flying counters, and the gold econ…",
+     "skillId": "tower-defense",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "card-game",
+     "title": "卡牌与构筑",
+     "summary": "Designs card games and deckbuilders in any engine: cards as data with one effect interpreter, deck zones, a trigger stack and seeded shuffles.",
+     "description": "Designs card games and deckbuilders in any engine: cards as data with one effect interpreter, deck zones, a trigger stack and seeded shuffles.",
+     "skillId": "card-game",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "puzzle",
+     "title": "网格与逻辑谜题",
+     "summary": "Designs grid and logic puzzle games in any engine: match-3 cascades, Sokoban pushing, unique-solution grids (nonogram, Sudoku), exact undo and solve…",
+     "description": "Designs grid and logic puzzle games in any engine: match-3 cascades, Sokoban pushing, unique-solution grids (nonogram, Sudoku), exact undo and solve…",
+     "skillId": "puzzle",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "fps-shooter",
+     "title": "FPS 射击手感",
+     "summary": "Designs first-person shooter combat in any engine: hitscan vs projectiles, time-to-kill, damage falloff, recoil patterns, ADS sensitivity and lag-co…",
+     "description": "Designs first-person shooter combat in any engine: hitscan vs projectiles, time-to-kill, damage falloff, recoil patterns, ADS sensitivity and lag-co…",
+     "skillId": "fps-shooter",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "survival-crafting",
+     "title": "生存建造",
+     "summary": "Designs survival-crafting loops in any engine: gathering, recipes and tech trees, carry weight, spoilage, hunger and temperature, and base building.",
+     "description": "Designs survival-crafting loops in any engine: gathering, recipes and tech trees, carry weight, spoilage, hunger and temperature, and base building.",
+     "skillId": "survival-crafting",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "visual-novel",
+     "title": "视觉小说",
+     "summary": "Builds visual novels and choice-driven stories in Ren'Py or any engine: routes and endings, save-anywhere, backlog, skip-read-only and typewriter te…",
+     "description": "Builds visual novels and choice-driven stories in Ren'Py or any engine: routes and endings, save-anywhere, backlog, skip-read-only and typewriter te…",
+     "skillId": "visual-novel",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "dialogue-systems",
+     "title": "分支对话",
+     "summary": "Builds engine-neutral branching dialogue with Ink, Yarn Spinner or a small JSON graph runner: lines, choices, conditions, variables and localization…",
+     "description": "Builds engine-neutral branching dialogue with Ink, Yarn Spinner or a small JSON graph runner: lines, choices, conditions, variables and localization…",
+     "skillId": "dialogue-systems",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-ai",
+     "title": "敌人与 NPC AI",
+     "summary": "Designs engine-neutral enemy and NPC AI: picks FSM, behavior tree, utility or GOAP, and builds perception, steering and A* pathfinding.",
+     "description": "Designs engine-neutral enemy and NPC AI: picks FSM, behavior tree, utility or GOAP, and builds perception, steering and A* pathfinding.",
+     "skillId": "game-ai",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "ai-behavior-trees-utility-ai",
+     "title": "行为树与效用 AI",
+     "summary": "Engine-neutral behavior tree and utility AI code for NPCs in any language: Blackboard, reactive composites, decorators and response-curve scoring.",
+     "description": "Engine-neutral behavior tree and utility AI code for NPCs in any language: Blackboard, reactive composites, decorators and response-curve scoring.",
+     "skillId": "ai-behavior-trees-utility-ai",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "procedural-gen",
+     "title": "程序化生成",
+     "summary": "Engine-neutral procedural generation in Python with Godot and Unity mappings: seeded RNG, dungeon layouts, wave function collapse, noise terrain and…",
+     "description": "Engine-neutral procedural generation in Python with Godot and Unity mappings: seeded RNG, dungeon layouts, wave function collapse, noise terrain and…",
+     "skillId": "procedural-gen",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-nodes-scenes",
+     "title": "Godot 场景与节点",
+     "summary": "Godot 4.7 scene-tree structure: reusable .tscn scenes, instantiate(), autoloads and a checker for broken res:// paths and uids.",
+     "description": "Godot 4.7 scene-tree structure: reusable .tscn scenes, instantiate(), autoloads and a checker for broken res:// paths and uids.",
+     "skillId": "godot-nodes-scenes",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-gdscript",
+     "title": "GDScript 2.0",
+     "summary": "GDScript 2.0 for Godot 4.7: static typing, @export and @onready, await and coroutines, and porting 3.x code.",
+     "description": "GDScript 2.0 for Godot 4.7: static typing, @export and @onready, await and coroutines, and porting 3.x code.",
+     "skillId": "godot-gdscript",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-game-script-engineer",
+     "title": "Godot 玩法脚本工程",
+     "summary": "Godot 4.x 玩法脚本工程专家——用 GDScript 2.0（必要时 Godot C#）实现类型安全的玩法系统，覆盖节点组合与组件拆分、signal/EventBus 解耦、@export/@onready 类型化引用、Resource 数据建模、.tscn/.tres 格式与解析报错、…",
+     "description": "Godot 4.x 玩法脚本工程专家——用 GDScript 2.0（必要时 Godot C#）实现类型安全的玩法系统，覆盖节点组合与组件拆分、signal/EventBus 解耦、@export/@onready 类型化引用、Resource 数据建模、.tscn/.tres 格式与解析报错、…",
+     "skillId": "godot-game-script-engineer",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-signals-groups",
+     "title": "信号与节点组",
+     "summary": "Godot 4.7 signals and node groups: typed signals, connect() with Callables, one-shot and deferred connections, event-bus autoloads and call_group br…",
+     "description": "Godot 4.7 signals and node groups: typed signals, connect() with Callables, one-shot and deferred connections, event-bus autoloads and call_group br…",
+     "skillId": "godot-signals-groups",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-resources",
+     "title": "自定义 Resource 数据驱动",
+     "summary": "Godot 4.7 data-driven design with custom Resources: class_name and @export fields, .tres files, shared references vs duplicate_deep(), uids and thre…",
+     "description": "Godot 4.7 data-driven design with custom Resources: class_name and @export fields, .tres files, shared references vs duplicate_deep(), uids and thre…",
+     "skillId": "godot-resources",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-csharp",
+     "title": "Godot C#",
+     "summary": "C# and .NET in Godot 4.7: partial node classes, the PascalCase lifecycle, [Export] and [Signal], signals as C# events, the .csproj and calling GDScr…",
+     "description": "C# and .NET in Godot 4.7: partial node classes, the PascalCase lifecycle, [Export] and [Signal], signals as C# events, the .csproj and calling GDScr…",
+     "skillId": "godot-csharp",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-2d-movement",
+     "title": "2D 角色移动",
+     "summary": "Godot 4.7 CharacterBody2D movement in GDScript: platformer run and jump, top-down 8-direction motion, slopes and one-way platforms, with a headless …",
+     "description": "Godot 4.7 CharacterBody2D movement in GDScript: platformer run and jump, top-down 8-direction motion, slopes and one-way platforms, with a headless …",
+     "skillId": "godot-2d-movement",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-physics",
+     "title": "物理与碰撞",
+     "summary": "Godot 4.7 physics API in 2D and 3D: body and Area types, collision_layer and mask bits, Area signals for hurtboxes, RayCast and space queries, and J…",
+     "description": "Godot 4.7 physics API in 2D and 3D: body and Area types, collision_layer and mask bits, Area signals for hurtboxes, RayCast and space queries, and J…",
+     "skillId": "godot-physics",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-tilemap",
+     "title": "瓦片地图",
+     "summary": "Godot 4.7 tile maps with TileMapLayer and TileSet: atlas sources, data layers, terrain autotiling and set_cell or local_to_map at runtime.",
+     "description": "Godot 4.7 tile maps with TileMapLayer and TileSet: atlas sources, data layers, terrain autotiling and set_cell or local_to_map at runtime.",
+     "skillId": "godot-tilemap",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-animation",
+     "title": "动画",
+     "summary": "Godot 4.7 animation APIs: AnimationPlayer, AnimationTree state machines, AnimatedSprite2D and create_tween() Tweens, with a headless state test.",
+     "description": "Godot 4.7 animation APIs: AnimationPlayer, AnimationTree state machines, AnimatedSprite2D and create_tween() Tweens, with a headless state test.",
+     "skillId": "godot-animation",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-3d-essentials",
+     "title": "3D 场景基础",
+     "summary": "Godot 4.7 3D scene setup: Camera3D, lights, WorldEnvironment (sky, ambient, tonemap, fog), StandardMaterial3D, GridMap and local vs global transform…",
+     "description": "Godot 4.7 3D scene setup: Camera3D, lights, WorldEnvironment (sky, ambient, tonemap, fog), StandardMaterial3D, GridMap and local vs global transform…",
+     "skillId": "godot-3d-essentials",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-ui-control",
+     "title": "Control UI",
+     "summary": "Godot 4.7 Control-node API for menus and HUDs: anchors, Containers, Theme and StyleBox, focus neighbours and stretch settings, with a headless layou…",
+     "description": "Godot 4.7 Control-node API for menus and HUDs: anchors, Containers, Theme and StyleBox, focus neighbours and stretch settings, with a headless layou…",
+     "skillId": "godot-ui-control",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-shaders",
+     "title": "Godot 着色器",
+     "summary": "Godot 4.7 Shading Language syntax and pipeline: canvas_item, spatial and particle shaders, built-ins, ShaderMaterial wiring, a headless compile chec…",
+     "description": "Godot 4.7 Shading Language syntax and pipeline: canvas_item, spatial and particle shaders, built-ins, ShaderMaterial wiring, a headless compile chec…",
+     "skillId": "godot-shaders",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-audio",
+     "title": "Godot 音频",
+     "summary": "Godot 4.7 audio APIs: AudioStreamPlayer 2D and 3D, the bus layout, AudioServer volume and mute, polyphony, looping imports and playback position for…",
+     "description": "Godot 4.7 audio APIs: AudioStreamPlayer 2D and 3D, the bus layout, AudioServer volume and mute, polyphony, looping imports and playback position for…",
+     "skillId": "godot-audio",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-multiplayer",
+     "title": "联机",
+     "summary": "Godot 4.7 high-level multiplayer: ENet host and join, @rpc with rpc_id(), MultiplayerSpawner and MultiplayerSynchronizer, with a two-instance headle…",
+     "description": "Godot 4.7 high-level multiplayer: ENet host and join, @rpc with rpc_id(), MultiplayerSpawner and MultiplayerSynchronizer, with a two-instance headle…",
+     "skillId": "godot-multiplayer",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "input-systems",
+     "title": "输入系统与按键重绑",
+     "summary": "Engine-neutral input architecture with Godot InputMap code: named actions, stick deadzones, buffered presses and rebinding with conflict checks.",
+     "description": "Engine-neutral input architecture with Godot InputMap code: named actions, stick deadzones, buffered presses and rebinding with conflict checks.",
+     "skillId": "input-systems",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "camera-systems",
+     "title": "摄像机",
+     "summary": "Builds and tunes game cameras, engine-neutral with Godot and Cinemachine 3 mappings: 2D follow with deadzone and look-ahead, third-person orbit, fir…",
+     "description": "Builds and tunes game cameras, engine-neutral with Godot and Cinemachine 3 mappings: 2D follow with deadzone and look-ahead, third-person orbit, fir…",
+     "skillId": "camera-systems",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "save-systems",
+     "title": "存档系统",
+     "summary": "Engine-neutral save and load with Godot and Python code: what to serialize, slots and autosave, atomic writes and versioned migration.",
+     "description": "Engine-neutral save and load with Godot and Python code: what to serialize, slots and autosave, atomic writes and versioned migration.",
+     "skillId": "save-systems",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "physics-tuning",
+     "title": "物理调参",
+     "summary": "Engine-neutral physics tuning with Godot checks: fixed timestep and interpolation, CCD against tunnelling, damping, solver iterations and collision …",
+     "description": "Engine-neutral physics tuning with Godot checks: fixed timestep and interpolation, CCD against tunnelling, damping, solver iterations and collision …",
+     "skillId": "physics-tuning",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-feel",
+     "title": "手感与打击感",
+     "summary": "Adds engine-neutral juice to a working mechanic: trauma-based screen shake, hit-stop, eased tweens, squash and stretch, and knockback.",
+     "description": "Adds engine-neutral juice to a working mechanic: trauma-based screen shake, hit-stop, eased tweens, squash and stretch, and knockback.",
+     "skillId": "game-feel",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-ui-ux",
+     "title": "游戏 UI/UX 规则",
+     "summary": "Engine-neutral design rules for game HUDs and menus: anchors and containers, scaling, safe areas, gamepad focus, HUDs driven by events instead of po…",
+     "description": "Engine-neutral design rules for game HUDs and menus: anchors and containers, scaling, safe areas, gamepad focus, HUDs driven by events instead of po…",
+     "skillId": "game-ui-ux",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "audio-design",
+     "title": "音频设计（总线/混音/自适应）",
+     "summary": "Engine-neutral game audio technique: bus layout, volume sliders in decibels, loudness, ducking music under dialogue, adaptive music and SFX variatio…",
+     "description": "Engine-neutral game audio technique: bus layout, volume sliders in decibels, loudness, ducking music under dialogue, adaptive music and SFX variatio…",
+     "skillId": "audio-design",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "performance-optimization",
+     "title": "性能分析与优化",
+     "summary": "Finds and fixes game frame-rate problems by measurement in Godot, Unity, Unreal or Roblox: CPU- vs GPU-bound, then the biggest fix (draw calls, pool…",
+     "description": "Finds and fixes game frame-rate problems by measurement in Godot, Unity, Unreal or Roblox: CPU- vs GPU-bound, then the biggest fix (draw calls, pool…",
+     "skillId": "performance-optimization",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "shader-programming",
+     "title": "着色器原理",
+     "summary": "Engine-neutral shader technique in GLSL with HLSL equivalents: how dissolve, outline, fresnel rim and post effects work, and porting GLSL to HLSL.",
+     "description": "Engine-neutral shader technique in GLSL with HLSL equivalents: how dissolve, outline, fresnel rim and post effects work, and porting GLSL to HLSL.",
+     "skillId": "shader-programming",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "create-game-assets",
+     "title": "游戏美术资产生产",
+     "summary": "Plans, generates or sources, and validates consistent game art: style guides, sprites, pixel art, tilesets, icons and textures, with QA and licence …",
+     "description": "Plans, generates or sources, and validates consistent game art: style guides, sprites, pixel art, tilesets, icons and textures, with QA and licence …",
+     "skillId": "create-game-assets",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-ui-workflow",
+     "title": "游戏 UI 全流程编排",
+     "summary": "Orchestrates an end-to-end game UI workflow from game design (GDD), PRD, and UI interaction logic through design specification, screen-system extens…",
+     "description": "Orchestrates an end-to-end game UI workflow from game design (GDD), PRD, and UI interaction logic through design specification, screen-system extens…",
+     "skillId": "game-ui-workflow",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-ui-extension",
+     "title": "界面系统扩展",
+     "summary": "Extends a game concept or partial interface into a coherent screen system, player journey, feature flow, prioritized screen inventory, states, edge …",
+     "description": "Extends a game concept or partial interface into a coherent screen system, player journey, feature flow, prioritized screen inventory, states, edge …",
+     "skillId": "game-ui-extension",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-ui-page-generator",
+     "title": "页面设计生成",
+     "summary": "Designs and generates one complete game UI page at a time using an approved style and screen contract, producing a page brief, reproducible image pr…",
+     "description": "Designs and generates one complete game UI page at a time using an approved style and screen contract, producing a page brief, reproducible image pr…",
+     "skillId": "game-ui-page-generator",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-ui-component-breakdown",
+     "title": "组件拆解",
+     "summary": "Breaks an approved game UI page or visual style into reusable, individually generated component assets with clean edges, transparent backgrounds whe…",
+     "description": "Breaks an approved game UI page or visual style into reusable, individually generated component assets with clean edges, transparent backgrounds whe…",
+     "skillId": "game-ui-component-breakdown",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-ui-sprite-sheet-splitter",
+     "title": "图集拆分",
+     "summary": "Splits a generated game UI sprite sheet or component board into individual transparent PNG elements, writes crop metadata, validates dimensions and …",
+     "description": "Splits a generated game UI sprite sheet or component board into individual transparent PNG elements, writes crop metadata, validates dimensions and …",
+     "skillId": "game-ui-sprite-sheet-splitter",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-ui-asset-pipeline",
+     "title": "图集打包与引擎交付",
+     "summary": "Packs semantically named transparent game UI PNG files into an atlas, preserves component states and reviewed 9-slice metadata, and exports determin…",
+     "description": "Packs semantically named transparent game UI PNG files into an atlas, preserves component states and reviewed 9-slice metadata, and exports determin…",
+     "skillId": "game-ui-asset-pipeline",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-build",
+     "title": "游戏构建执行",
+     "summary": "Build the approved game design into a complete, runnable game using the local environment's available rendering stacks, 3D/2D generators, and modeli…",
+     "description": "Build the approved game design into a complete, runnable game using the local environment's available rendering stacks, 3D/2D generators, and modeli…",
+     "skillId": "game-build",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-gdscript-headless-testing",
+     "title": "无头测试与 CI",
+     "summary": "Runs Godot 4.7 GDScript tests with godot --headless and a SceneTree runner that exits non-zero on failure, so CI can gate merges.",
+     "description": "Runs Godot 4.7 GDScript tests with godot --headless and a SceneTree runner that exits non-zero on failure, so CI can gate merges.",
+     "skillId": "godot-gdscript-headless-testing",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "game-qa",
+     "title": "实机盲玩验收",
+     "summary": "Blind-playtest and verify a game on its target runtime as a first-time player without reading source code. Run an isolated first-time playthrough fi…",
+     "description": "Blind-playtest and verify a game on its target runtime as a first-time player without reading source code. Run an isolated first-time playthrough fi…",
+     "skillId": "game-qa",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "godot-export",
+     "title": "导出与发布",
+     "summary": "Exports Godot 4.7 projects: templates, export_presets.cfg for desktop, Web and Android, command-line exports and web COOP/COEP headers.",
+     "description": "Exports Godot 4.7 projects: templates, export_presets.cfg for desktop, Web and Android, command-line exports and web COOP/COEP headers.",
+     "skillId": "godot-export",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "dev-god",
+     "title": "高阶全栈编程",
+     "summary": "编程大神：面向复杂真实项目的高阶全栈编程助手。",
+     "description": "编程大神：面向复杂真实项目的高阶全栈编程助手。",
+     "skillId": "dev-god",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "dev-expert",
+     "title": "编程专家",
+     "summary": "编程专家.Skill P8级编程助手,25年实战经验技能Skill，全栈：Java/Php网站/软件项目、API设计、Bug诊断、代码生成、代码审查、重构、测试用例、性能基准、技术选型、文档生成、任务拆解、Spec驱动、Karpathy规范、CMS二次开发、前端设计、MySQL/Mariadb、…",
+     "description": "编程专家.Skill P8级编程助手,25年实战经验技能Skill，全栈：Java/Php网站/软件项目、API设计、Bug诊断、代码生成、代码审查、重构、测试用例、性能基准、技术选型、文档生成、任务拆解、Spec驱动、Karpathy规范、CMS二次开发、前端设计、MySQL/Mariadb、…",
+     "skillId": "dev-expert",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "dev-expert-pro",
+     "title": "编程专家 Pro",
+     "summary": "编程专家 Pro：融合编程专家 2.0.3 工程专题与编程大神的鸿蒙 ArkTS/ArkUI、微信小程序和小游戏开发资料。",
+     "description": "编程专家 Pro：融合编程专家 2.0.3 工程专题与编程大神的鸿蒙 ArkTS/ArkUI、微信小程序和小游戏开发资料。",
+     "skillId": "dev-expert-pro",
+     "skillType": "local",
+     "local": true
+    },
+    {
+     "name": "skill-creator",
+     "title": "技能编写",
+     "summary": "Guide for creating effective skills.",
+     "description": "Guide for creating effective skills.",
+     "skillId": "skill-creator",
+     "skillType": "local",
+     "local": true
+    }
+   ],
+   "plugins": [],
+   "suggestions": [
+    {
+     "text": "从零做一个能跑的 2D 平台跳跃小样，含移动、跳跃、踩怪、关卡切换",
+     "prompt": "从零做一个 2D 平台跳跃小样"
+    },
+    {
+     "text": "给现有 Godot 工程加存档系统，要求版本迁移与损坏文件容错",
+     "prompt": "给现有工程加存档系统"
+    },
+    {
+     "text": "角色移动手感不对（发飘/粘墙/斜坡抖），帮我定位并调好",
+     "prompt": "调角色移动手感"
+    },
+    {
+     "text": "跑无头测试，把脚本解析错误和场景加载失败都找出来",
+     "prompt": "跑无头测试查错误"
+    },
+    {
+     "text": "做一版能上 Web 的导出，处理 COOP/COEP 与 SharedArrayBuffer",
+     "prompt": "导出 Web 版本"
+    },
+    {
+     "text": "设计一个 roguelike 的核心循环与元进度，并给出可实现的数值框架",
+     "prompt": "设计 roguelike 核心循环"
+    },
+    {
+     "text": "把占位灰盒换成正式美术，先定美术方向再做资产",
+     "prompt": "灰盒换正式美术"
+    },
+    {
+     "text": "帧率掉了，帮我判断是 CPU 还是 GPU 瓶颈并给出最大那处优化",
+     "prompt": "排查帧率问题"
+    }
+   ],
+   "creators": [
+    "local"
+   ],
+   "skillGroups": [
+    {
+     "name": "立项与设计",
+     "skills": [
+      {
+       "slug": "game-design",
+       "name": "game-design",
+       "summary": "Select a playable game concept, design world rules, systems, levels, and branching narrative, and define visual and audio art direction. Turns SOURC…"
+      },
+      {
+       "slug": "game-designer",
+       "name": "game-designer",
+       "summary": "游戏系统与机制设计师，用系统思维、平衡偏执与玩家共情把\"好玩\"变成可交付的工程产物。"
+      },
+      {
+       "slug": "game-ui-product-design",
+       "name": "game-ui-product-design",
+       "summary": "Writes and maintains game design docs (GDD), product requirements (PRD), and UI interaction logic before any page image generation."
+      },
+      {
+       "slug": "game-ui-specification",
+       "name": "game-ui-specification",
+       "summary": "Creates and maintains production-oriented game UI specifications and shared visual contracts covering color, typography, layout, geometry, component…"
+      },
+      {
+       "slug": "level-design",
+       "name": "level-design",
+       "summary": "Engine-neutral level design with Godot checks: player metrics from the real controller, key and ability gating with a soft-lock check, and pacing."
+      },
+      {
+       "slug": "router",
+       "name": "router",
+       "summary": "Routes any game-development request to the right skills: detects the engine (Godot, Unity, Unreal, Ebitengine, Bevy, Phaser, PixiJS, three.js, Defol…"
+      }
+     ]
+    },
+    {
+     "name": "类型化玩法设计",
+     "skills": [
+      {
+       "slug": "platformer",
+       "name": "platformer",
+       "summary": "Designs 2D platformers in any engine: jump feel (coyote time, jump buffering, variable height, fall gravity, corner correction), wall jumps, hazards…"
+      },
+      {
+       "slug": "roguelike",
+       "name": "roguelike",
+       "summary": "Designs run-based roguelikes and roguelites in any engine: run structure, permadeath, meta-progression, seeded and daily runs, turn order and symmet…"
+      },
+      {
+       "slug": "rpg",
+       "name": "rpg",
+       "summary": "Designs RPG progression and combat numbers in any engine: stats with a modifier stack, XP curves, damage formulas, items and equipment (slots, rarit…"
+      },
+      {
+       "slug": "tower-defense",
+       "name": "tower-defense",
+       "summary": "Designs tower defense games in any engine: lane and maze pathing, wave pacing, targeting priorities, armoured and flying counters, and the gold econ…"
+      },
+      {
+       "slug": "card-game",
+       "name": "card-game",
+       "summary": "Designs card games and deckbuilders in any engine: cards as data with one effect interpreter, deck zones, a trigger stack and seeded shuffles."
+      },
+      {
+       "slug": "puzzle",
+       "name": "puzzle",
+       "summary": "Designs grid and logic puzzle games in any engine: match-3 cascades, Sokoban pushing, unique-solution grids (nonogram, Sudoku), exact undo and solve…"
+      },
+      {
+       "slug": "fps-shooter",
+       "name": "fps-shooter",
+       "summary": "Designs first-person shooter combat in any engine: hitscan vs projectiles, time-to-kill, damage falloff, recoil patterns, ADS sensitivity and lag-co…"
+      },
+      {
+       "slug": "survival-crafting",
+       "name": "survival-crafting",
+       "summary": "Designs survival-crafting loops in any engine: gathering, recipes and tech trees, carry weight, spoilage, hunger and temperature, and base building."
+      },
+      {
+       "slug": "visual-novel",
+       "name": "visual-novel",
+       "summary": "Builds visual novels and choice-driven stories in Ren'Py or any engine: routes and endings, save-anywhere, backlog, skip-read-only and typewriter te…"
+      },
+      {
+       "slug": "dialogue-systems",
+       "name": "dialogue-systems",
+       "summary": "Builds engine-neutral branching dialogue with Ink, Yarn Spinner or a small JSON graph runner: lines, choices, conditions, variables and localization…"
+      },
+      {
+       "slug": "game-ai",
+       "name": "game-ai",
+       "summary": "Designs engine-neutral enemy and NPC AI: picks FSM, behavior tree, utility or GOAP, and builds perception, steering and A* pathfinding."
+      },
+      {
+       "slug": "ai-behavior-trees-utility-ai",
+       "name": "ai-behavior-trees-utility-ai",
+       "summary": "Engine-neutral behavior tree and utility AI code for NPCs in any language: Blackboard, reactive composites, decorators and response-curve scoring."
+      },
+      {
+       "slug": "procedural-gen",
+       "name": "procedural-gen",
+       "summary": "Engine-neutral procedural generation in Python with Godot and Unity mappings: seeded RNG, dungeon layouts, wave function collapse, noise terrain and…"
+      }
+     ]
+    },
+    {
+     "name": "Godot 工程骨架",
+     "skills": [
+      {
+       "slug": "godot-nodes-scenes",
+       "name": "godot-nodes-scenes",
+       "summary": "Godot 4.7 scene-tree structure: reusable .tscn scenes, instantiate(), autoloads and a checker for broken res:// paths and uids."
+      },
+      {
+       "slug": "godot-gdscript",
+       "name": "godot-gdscript",
+       "summary": "GDScript 2.0 for Godot 4.7: static typing, @export and @onready, await and coroutines, and porting 3.x code."
+      },
+      {
+       "slug": "godot-game-script-engineer",
+       "name": "godot-game-script-engineer",
+       "summary": "Godot 4.x 玩法脚本工程专家——用 GDScript 2.0（必要时 Godot C#）实现类型安全的玩法系统，覆盖节点组合与组件拆分、signal/EventBus 解耦、@export/@onready 类型化引用、Resource 数据建模、.tscn/.tres 格式与解析报错、…"
+      },
+      {
+       "slug": "godot-signals-groups",
+       "name": "godot-signals-groups",
+       "summary": "Godot 4.7 signals and node groups: typed signals, connect() with Callables, one-shot and deferred connections, event-bus autoloads and call_group br…"
+      },
+      {
+       "slug": "godot-resources",
+       "name": "godot-resources",
+       "summary": "Godot 4.7 data-driven design with custom Resources: class_name and @export fields, .tres files, shared references vs duplicate_deep(), uids and thre…"
+      },
+      {
+       "slug": "godot-csharp",
+       "name": "godot-csharp",
+       "summary": "C# and .NET in Godot 4.7: partial node classes, the PascalCase lifecycle, [Export] and [Signal], signals as C# events, the .csproj and calling GDScr…"
+      }
+     ]
+    },
+    {
+     "name": "Godot 玩法实现",
+     "skills": [
+      {
+       "slug": "godot-2d-movement",
+       "name": "godot-2d-movement",
+       "summary": "Godot 4.7 CharacterBody2D movement in GDScript: platformer run and jump, top-down 8-direction motion, slopes and one-way platforms, with a headless …"
+      },
+      {
+       "slug": "godot-physics",
+       "name": "godot-physics",
+       "summary": "Godot 4.7 physics API in 2D and 3D: body and Area types, collision_layer and mask bits, Area signals for hurtboxes, RayCast and space queries, and J…"
+      },
+      {
+       "slug": "godot-tilemap",
+       "name": "godot-tilemap",
+       "summary": "Godot 4.7 tile maps with TileMapLayer and TileSet: atlas sources, data layers, terrain autotiling and set_cell or local_to_map at runtime."
+      },
+      {
+       "slug": "godot-animation",
+       "name": "godot-animation",
+       "summary": "Godot 4.7 animation APIs: AnimationPlayer, AnimationTree state machines, AnimatedSprite2D and create_tween() Tweens, with a headless state test."
+      },
+      {
+       "slug": "godot-3d-essentials",
+       "name": "godot-3d-essentials",
+       "summary": "Godot 4.7 3D scene setup: Camera3D, lights, WorldEnvironment (sky, ambient, tonemap, fog), StandardMaterial3D, GridMap and local vs global transform…"
+      },
+      {
+       "slug": "godot-ui-control",
+       "name": "godot-ui-control",
+       "summary": "Godot 4.7 Control-node API for menus and HUDs: anchors, Containers, Theme and StyleBox, focus neighbours and stretch settings, with a headless layou…"
+      },
+      {
+       "slug": "godot-shaders",
+       "name": "godot-shaders",
+       "summary": "Godot 4.7 Shading Language syntax and pipeline: canvas_item, spatial and particle shaders, built-ins, ShaderMaterial wiring, a headless compile chec…"
+      },
+      {
+       "slug": "godot-audio",
+       "name": "godot-audio",
+       "summary": "Godot 4.7 audio APIs: AudioStreamPlayer 2D and 3D, the bus layout, AudioServer volume and mute, polyphony, looping imports and playback position for…"
+      },
+      {
+       "slug": "godot-multiplayer",
+       "name": "godot-multiplayer",
+       "summary": "Godot 4.7 high-level multiplayer: ENet host and join, @rpc with rpc_id(), MultiplayerSpawner and MultiplayerSynchronizer, with a two-instance headle…"
+      },
+      {
+       "slug": "input-systems",
+       "name": "input-systems",
+       "summary": "Engine-neutral input architecture with Godot InputMap code: named actions, stick deadzones, buffered presses and rebinding with conflict checks."
+      },
+      {
+       "slug": "camera-systems",
+       "name": "camera-systems",
+       "summary": "Builds and tunes game cameras, engine-neutral with Godot and Cinemachine 3 mappings: 2D follow with deadzone and look-ahead, third-person orbit, fir…"
+      },
+      {
+       "slug": "save-systems",
+       "name": "save-systems",
+       "summary": "Engine-neutral save and load with Godot and Python code: what to serialize, slots and autosave, atomic writes and versioned migration."
+      },
+      {
+       "slug": "physics-tuning",
+       "name": "physics-tuning",
+       "summary": "Engine-neutral physics tuning with Godot checks: fixed timestep and interpolation, CCD against tunnelling, damping, solver iterations and collision …"
+      }
+     ]
+    },
+    {
+     "name": "手感与体验",
+     "skills": [
+      {
+       "slug": "game-feel",
+       "name": "game-feel",
+       "summary": "Adds engine-neutral juice to a working mechanic: trauma-based screen shake, hit-stop, eased tweens, squash and stretch, and knockback."
+      },
+      {
+       "slug": "game-ui-ux",
+       "name": "game-ui-ux",
+       "summary": "Engine-neutral design rules for game HUDs and menus: anchors and containers, scaling, safe areas, gamepad focus, HUDs driven by events instead of po…"
+      },
+      {
+       "slug": "audio-design",
+       "name": "audio-design",
+       "summary": "Engine-neutral game audio technique: bus layout, volume sliders in decibels, loudness, ducking music under dialogue, adaptive music and SFX variatio…"
+      },
+      {
+       "slug": "performance-optimization",
+       "name": "performance-optimization",
+       "summary": "Finds and fixes game frame-rate problems by measurement in Godot, Unity, Unreal or Roblox: CPU- vs GPU-bound, then the biggest fix (draw calls, pool…"
+      },
+      {
+       "slug": "shader-programming",
+       "name": "shader-programming",
+       "summary": "Engine-neutral shader technique in GLSL with HLSL equivalents: how dissolve, outline, fresnel rim and post effects work, and porting GLSL to HLSL."
+      }
+     ]
+    },
+    {
+     "name": "美术资产",
+     "skills": [
+      {
+       "slug": "create-game-assets",
+       "name": "create-game-assets",
+       "summary": "Plans, generates or sources, and validates consistent game art: style guides, sprites, pixel art, tilesets, icons and textures, with QA and licence …"
+      },
+      {
+       "slug": "game-ui-workflow",
+       "name": "game-ui-workflow",
+       "summary": "Orchestrates an end-to-end game UI workflow from game design (GDD), PRD, and UI interaction logic through design specification, screen-system extens…"
+      },
+      {
+       "slug": "game-ui-extension",
+       "name": "game-ui-extension",
+       "summary": "Extends a game concept or partial interface into a coherent screen system, player journey, feature flow, prioritized screen inventory, states, edge …"
+      },
+      {
+       "slug": "game-ui-page-generator",
+       "name": "game-ui-page-generator",
+       "summary": "Designs and generates one complete game UI page at a time using an approved style and screen contract, producing a page brief, reproducible image pr…"
+      },
+      {
+       "slug": "game-ui-component-breakdown",
+       "name": "game-ui-component-breakdown",
+       "summary": "Breaks an approved game UI page or visual style into reusable, individually generated component assets with clean edges, transparent backgrounds whe…"
+      },
+      {
+       "slug": "game-ui-sprite-sheet-splitter",
+       "name": "game-ui-sprite-sheet-splitter",
+       "summary": "Splits a generated game UI sprite sheet or component board into individual transparent PNG elements, writes crop metadata, validates dimensions and …"
+      },
+      {
+       "slug": "game-ui-asset-pipeline",
+       "name": "game-ui-asset-pipeline",
+       "summary": "Packs semantically named transparent game UI PNG files into an atlas, preserves component states and reviewed 9-slice metadata, and exports determin…"
+      }
+     ]
+    },
+    {
+     "name": "构建、测试与发布",
+     "skills": [
+      {
+       "slug": "game-build",
+       "name": "game-build",
+       "summary": "Build the approved game design into a complete, runnable game using the local environment's available rendering stacks, 3D/2D generators, and modeli…"
+      },
+      {
+       "slug": "godot-gdscript-headless-testing",
+       "name": "godot-gdscript-headless-testing",
+       "summary": "Runs Godot 4.7 GDScript tests with godot --headless and a SceneTree runner that exits non-zero on failure, so CI can gate merges."
+      },
+      {
+       "slug": "game-qa",
+       "name": "game-qa",
+       "summary": "Blind-playtest and verify a game on its target runtime as a first-time player without reading source code. Run an isolated first-time playthrough fi…"
+      },
+      {
+       "slug": "godot-export",
+       "name": "godot-export",
+       "summary": "Exports Godot 4.7 projects: templates, export_presets.cfg for desktop, Web and Android, command-line exports and web COOP/COEP headers."
+      }
+     ]
+    },
+    {
+     "name": "通用工程",
+     "skills": [
+      {
+       "slug": "dev-god",
+       "name": "dev-god",
+       "summary": "编程大神：面向复杂真实项目的高阶全栈编程助手。"
+      },
+      {
+       "slug": "dev-expert",
+       "name": "dev-expert",
+       "summary": "编程专家.Skill P8级编程助手,25年实战经验技能Skill，全栈：Java/Php网站/软件项目、API设计、Bug诊断、代码生成、代码审查、重构、测试用例、性能基准、技术选型、文档生成、任务拆解、Spec驱动、Karpathy规范、CMS二次开发、前端设计、MySQL/Mariadb、…"
+      },
+      {
+       "slug": "dev-expert-pro",
+       "name": "dev-expert-pro",
+       "summary": "编程专家 Pro：融合编程专家 2.0.3 工程专题与编程大神的鸿蒙 ArkTS/ArkUI、微信小程序和小游戏开发资料。"
+      },
+      {
+       "slug": "skill-creator",
+       "name": "skill-creator",
+       "summary": "Guide for creating effective skills."
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
